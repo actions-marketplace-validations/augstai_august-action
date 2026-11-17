@@ -1,0 +1,67 @@
+name: "August Cyber PR Gate"
+description: "Autonomous pull-request authorization & boundary gate powered by the August CLI."
+author: "August Cyber"
+branding:
+  icon: "shield"
+  color: "orange"
+
+inputs:
+  api-key:
+    description: "August Cyber API key (acrt_...)"
+    required: true
+  base:
+    description: "Base git ref to diff changed routes against"
+    required: false
+    default: "origin/main"
+  address:
+    description: "Local loopback address:port of the running target app"
+    required: false
+    default: "127.0.0.1:3000"
+  sandbox:
+    description: "Optional verified remote staging URL to test inside a scope-locked August Sandbox"
+    required: false
+    default: ""
+  actor-a:
+    description: "HTTP header for non-owner test actor (Actor A)"
+    required: true
+  actor-b:
+    description: "HTTP header for resource owner test actor (Actor B)"
+    required: true
+  project:
+    description: "Project directory to scan for changed routes"
+    required: false
+    default: "."
+  version:
+    description: "August CLI version to install"
+    required: false
+    default: "0.1.0"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install August CLI
+      shell: bash
+      env:
+        AUGUST_VERSION: ${{ inputs.version }}
+      run: |
+        curl -fsSL https://api.august.so/install | sh
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Run August PR Gate
+      shell: bash
+      env:
+        AUGUST_API_KEY: ${{ inputs.api-key }}
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_ADDRESS: ${{ inputs.address }}
+        INPUT_SANDBOX: ${{ inputs.sandbox }}
+        INPUT_ACTOR_A: ${{ inputs.actor-a }}
+        INPUT_ACTOR_B: ${{ inputs.actor-b }}
+        INPUT_PROJECT: ${{ inputs.project }}
+      run: |
+        ARGS=(ci --project "$INPUT_PROJECT" --base "$INPUT_BASE" --actor-a "$INPUT_ACTOR_A" --actor-b "$INPUT_ACTOR_B")
+        if [ -n "$INPUT_SANDBOX" ]; then
+          ARGS+=(--sandbox "$INPUT_SANDBOX")
+        else
+          ARGS+=(--address "$INPUT_ADDRESS")
+        fi
+        august "${ARGS[@]}"
