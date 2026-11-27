@@ -34,7 +34,7 @@ inputs:
   version:
     description: "August CLI version to install"
     required: false
-    default: "0.3.3"
+    default: "0.4.0"
 
 runs:
   using: "composite"
